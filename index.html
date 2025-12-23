@@ -3,199 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ITHALA20 Weather Station</title>
+    <title>ITHALA20 Smart Station</title>
+    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <style>
-        body { background-color: #f4f7f6; font-family: 'Sarabun', sans-serif; }
-        .card-weather {
-            border: none; border-radius: 15px; background: white;
-            padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            transition: transform 0.3s;
-        }
-        .card-weather:hover { transform: translateY(-5px); }
-        .icon-box { font-size: 2.5rem; margin-bottom: 10px; }
-        .value-text { font-size: 2.5rem; font-weight: bold; color: #333; }
-        .unit-text { font-size: 1rem; color: #777; }
-        .update-badge { font-size: 0.8rem; background: #e9ecef; color: #555; padding: 5px 10px; border-radius: 20px; }
-        
-        /* ตกแต่งการ์ดพยากรณ์พิเศษ */
-        .forecast-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-    </style>
-</head>
+    <link rel="stylesheet" href="style.css"> </head>
 <body>
 
     <div class="container py-4">
-        <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
             <div>
-                <h2 class="mb-0 fw-bold"><i class="fa-solid fa-tower-broadcast text-primary"></i> ITHALA20 Station</h2>
-                <small class="text-muted">Real-time Environmental Monitoring</small>
+                <h2 class="fw-bold mb-0"><i class="fa-solid fa-satellite-dish text-primary"></i> ITHALA20 Station</h2>
+                <small class="text-muted">ระบบพยากรณ์และเตือนภัยอัจฉริยะ</small>
             </div>
-            <span id="last-update" class="update-badge"><i class="fa-regular fa-clock"></i> Waiting...</span>
+            <div class="d-flex gap-2">
+                <input type="date" id="datePicker" class="form-control">
+                <button onclick="exportCSV()" class="btn btn-success text-nowrap">
+                    <i class="fa-solid fa-file-excel"></i> Export Excel
+                </button>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-12">
+                <div id="advice-card" class="card-weather bg-gradient-safe text-white p-4">
+                    <div class="d-flex align-items-center">
+                        <div style="font-size: 3rem; margin-right: 20px;" id="advice-icon">🤖</div>
+                        <div>
+                            <h3 class="fw-bold mb-1">คำแนะนำประจำวัน</h3>
+                            <div id="forecast-msg" class="fs-5">กำลังวิเคราะห์ข้อมูลสภาพอากาศ...</div>
+                            <div id="action-msg" class="fs-6 mt-2 badge bg-white text-dark p-2">...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="row g-3 mb-4">
-            
-            <div class="col-12">
-                <div class="card-weather forecast-card text-center">
-                    <h3 class="fw-bold mb-3"><i class="fa-solid fa-crystal-ball"></i> Weather Forecast</h3>
-                    <div id="forecast-text" style="font-size: 2.5rem; font-weight: bold; text-shadow: 1px 1px 2px rgba(0,0,0,0.2);">
-                        กำลังประมวลผล...
-                    </div>
-                    <div id="pressure-trend" class="mt-2" style="font-size: 1.1rem; opacity: 0.9;">
-                        --
-                    </div>
-                </div>
-            </div>
-            <div class="col-6 col-md-4">
-                <div class="card-weather text-center border-bottom border-4 border-danger">
-                    <div class="icon-box text-danger"><i class="fa-solid fa-temperature-three-quarters"></i></div>
-                    <div class="text-muted">Temperature</div>
-                    <div><span id="temp" class="value-text">--</span> <span class="unit-text">°C</span></div>
-                </div>
-            </div>
-            <div class="col-6 col-md-4">
-                <div class="card-weather text-center border-bottom border-4 border-info">
-                    <div class="icon-box text-info"><i class="fa-solid fa-droplet"></i></div>
-                    <div class="text-muted">Humidity</div>
-                    <div><span id="hum" class="value-text">--</span> <span class="unit-text">%</span></div>
-                </div>
-            </div>
-            <div class="col-6 col-md-4">
-                <div class="card-weather text-center border-bottom border-4 border-warning">
-                    <div class="icon-box text-warning"><i class="fa-solid fa-wind"></i></div>
-                    <div class="text-muted">Wind Speed</div>
-                    <div><span id="wind" class="value-text">--</span> <span class="unit-text">m/s</span></div>
-                </div>
-            </div>
-            <div class="col-6 col-md-4">
-                <div class="card-weather text-center border-bottom border-4 border-primary">
-                    <div class="icon-box text-primary"><i class="fa-solid fa-cloud-rain"></i></div>
-                    <div class="text-muted">Rain</div>
-                    <div><span id="rain" class="value-text">--</span> <span class="unit-text">mm</span></div>
-                </div>
-            </div>
-            <div class="col-6 col-md-4">
-                <div class="card-weather text-center border-bottom border-4" style="border-color: purple !important;">
-                    <div class="icon-box" style="color: purple;"><i class="fa-solid fa-sun"></i></div>
-                    <div class="text-muted">UV Index</div>
-                    <div><span id="uv" class="value-text">--</span> <span class="unit-text">idx</span></div>
-                </div>
-            </div>
-            <div class="col-6 col-md-4">
-                <div class="card-weather text-center border-bottom border-4 border-secondary">
-                    <div class="icon-box text-secondary"><i class="fa-solid fa-gauge-high"></i></div>
-                    <div class="text-muted">Pressure</div>
-                    <div><span id="pres" class="value-text" style="font-size: 1.8rem;">--</span> <span class="unit-text">hPa</span></div>
-                </div>
-            </div>
+            <div class="col-6 col-md-4"><div class="card-weather text-center border-bottom border-4 border-danger">
+                <i class="fa-solid fa-temperature-three-quarters text-danger fs-3 mb-2"></i>
+                <div class="text-muted">อุณหภูมิ</div>
+                <div><span id="temp" class="value-text">--</span> <span class="unit-text">°C</span></div>
+            </div></div>
+            <div class="col-6 col-md-4"><div class="card-weather text-center border-bottom border-4 border-warning">
+                <i class="fa-solid fa-wind text-warning fs-3 mb-2"></i>
+                <div class="text-muted">ความเร็วลม</div>
+                <div><span id="wind" class="value-text">--</span> <span class="unit-text">m/s</span></div>
+            </div></div>
+            <div class="col-6 col-md-4"><div class="card-weather text-center border-bottom border-4 border-primary">
+                <i class="fa-solid fa-cloud-rain text-primary fs-3 mb-2"></i>
+                <div class="text-muted">ปริมาณฝน</div>
+                <div><span id="rain" class="value-text">--</span> <span class="unit-text">mm</span></div>
+            </div></div>
+            <div class="col-6 col-md-4"><div class="card-weather text-center border-bottom border-4" style="border-color: purple !important;">
+                <i class="fa-solid fa-sun fs-3 mb-2" style="color: purple;"></i>
+                <div class="text-muted">UV Index</div>
+                <div><span id="uv" class="value-text">--</span> <span class="unit-text">idx</span></div>
+            </div></div>
+            <div class="col-6 col-md-4"><div class="card-weather text-center border-bottom border-4 border-info">
+                <i class="fa-solid fa-droplet text-info fs-3 mb-2"></i>
+                <div class="text-muted">ความชื้น</div>
+                <div><span id="hum" class="value-text">--</span> <span class="unit-text">%</span></div>
+            </div></div>
+            <div class="col-6 col-md-4"><div class="card-weather text-center border-bottom border-4 border-secondary">
+                <i class="fa-solid fa-gauge-high text-secondary fs-3 mb-2"></i>
+                <div class="text-muted">ความกดอากาศ</div>
+                <div><span id="pres" class="value-text fs-3">--</span> <span class="unit-text">hPa</span></div>
+            </div></div>
         </div>
 
         <div class="card-weather p-3">
-            <h5 class="mb-3"><i class="fa-solid fa-chart-line"></i> กราฟย้อนหลัง (Temperature & Wind)</h5>
+            <div class="d-flex justify-content-between">
+                <h5 class="fw-bold"><i class="fa-solid fa-chart-area"></i> กราฟย้อนหลัง</h5>
+                <small id="last-update" class="text-muted">Update: --</small>
+            </div>
             <canvas id="myChart" style="max-height: 350px;"></canvas>
         </div>
     </div>
 
-    <script>
-        // =========================================================
-        // 🔗 เชื่อมต่อ SUPABASE (ใส่ค่าของคุณให้แล้ว)
-        // =========================================================
-        const supabaseUrl = 'https://meyqbmfbmgzumsactbdw.supabase.co'
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1leXFibWZibWd6dW1zYWN0YmR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY0ODQ5MDUsImV4cCI6MjA4MjA2MDkwNX0.QbP3qTonv6wo32x1mcRKulJcNQ7H4KP_2W2ScsEKtFU'
-        const _supabase = supabase.createClient(supabaseUrl, supabaseKey)
-
-        // สร้างกราฟเปล่าๆ รอไว้
-        const ctx = document.getElementById('myChart').getContext('2d');
-        const weatherChart = new Chart(ctx, {
-            type: 'line',
-            data: { labels: [], datasets: [
-                { label: 'Temp (°C)', data: [], borderColor: '#dc3545', tension: 0.4, yAxisID: 'y' },
-                { label: 'Wind (m/s)', data: [], borderColor: '#ffc107', tension: 0.4, yAxisID: 'y1' }
-            ]},
-            options: {
-                responsive: true,
-                interaction: { mode: 'index', intersect: false },
-                scales: {
-                    y: { type: 'linear', display: true, position: 'left', title: {display:true, text:'Temperature'} },
-                    y1: { type: 'linear', display: true, position: 'right', grid: {drawOnChartArea: false}, title: {display:true, text:'Wind Speed'} }
-                }
-            }
-        });
-
-        // --- 🧠 ฟังก์ชันสมองกล: ทำนายอากาศ ---
-        function predictWeather(currentP, trendP) {
-            let forecast = "";
-            let icon = "";
-
-            // 1. ดูค่าปัจจุบัน
-            if (currentP > 1020) { forecast = "ฟ้าโปร่ง/แดดจัด"; icon = "☀️"; }
-            else if (currentP > 1009) { forecast = "เมฆมาก/ปกติ"; icon = "⛅"; }
-            else { forecast = "ฝนตก/พายุเข้า"; icon = "🌧️"; }
-
-            // 2. ดูแนวโน้ม (Trend) สำคัญกว่าค่าปัจจุบัน
-            if (trendP < -1.5) { return "⚠️ ระวังพายุ! (Storm Warning)"; }
-            else if (trendP > 1.5) { return "🌤️ ฟ้ากำลังเปิด (Clearing)"; }
-            
-            return icon + " " + forecast;
-        }
-
-        // ฟังก์ชันดึงข้อมูลหลัก
-        async function fetchData() {
-            // ดึงข้อมูล 60 แถวล่าสุด (ประมาณ 1 ชั่วโมง) เพื่อดูแนวโน้ม
-            const { data, error } = await _supabase
-                .from('weather_logs')
-                .select('*')
-                .order('created_at', { ascending: false })
-                .limit(60)
-
-            if (data && data.length > 0) {
-                const latest = data[0]; // ล่าสุด (Now)
-                const oldest = data[data.length - 1]; // เก่าสุดในลิสต์ (1 ชม. ก่อน)
-
-                // 1. อัปเดตตัวเลขใน Dashboard
-                document.getElementById('temp').innerText = latest.temperature.toFixed(1);
-                document.getElementById('hum').innerText = latest.humidity.toFixed(0);
-                document.getElementById('wind').innerText = latest.wind_speed.toFixed(1);
-                document.getElementById('rain').innerText = latest.rain.toFixed(1);
-                document.getElementById('uv').innerText = latest.uv.toFixed(1);
-                document.getElementById('pres').innerText = latest.pressure.toFixed(0);
-                
-                const date = new Date(latest.created_at);
-                document.getElementById('last-update').innerText = "Update: " + date.toLocaleTimeString('th-TH');
-
-                // 2. คำนวณพยากรณ์อากาศ 🔮
-                const trend = latest.pressure - oldest.pressure; // ผลต่างความกดอากาศ
-                const prediction = predictWeather(latest.pressure, trend);
-                
-                document.getElementById('forecast-text').innerText = prediction;
-                
-                // แสดงสถานะแนวโน้ม
-                let trendMsg = "";
-                if(trend > 0.5) trendMsg = `ความกดอากาศสูงขึ้น (+${trend.toFixed(1)} hPa)`;
-                else if(trend < -0.5) trendMsg = `ความกดอากาศลดลง (${trend.toFixed(1)} hPa)`;
-                else trendMsg = "ความกดอากาศคงที่";
-                document.getElementById('pressure-trend').innerText = trendMsg;
-
-                // 3. อัปเดตกราฟ (เอาแค่ 20 จุดล่าสุดพอ เดี๋ยวรก)
-                const chartData = data.slice(0, 20).reverse();
-                
-                weatherChart.data.labels = chartData.map(d => new Date(d.created_at).toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'}));
-                weatherChart.data.datasets[0].data = chartData.map(d => d.temperature);
-                weatherChart.data.datasets[1].data = chartData.map(d => d.wind_speed);
-                weatherChart.update();
-            }
-        }
-
-        // เริ่มทำงานทันที และวนทุก 10 วินาที
-        fetchData();
-        setInterval(fetchData, 10000);
-    </script>
-</body>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="script.js"></script> </body>
 </html>

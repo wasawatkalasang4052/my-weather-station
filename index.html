@@ -180,7 +180,7 @@
                 let trendMsg = "";
                 if(trend > 0.5) trendMsg = `ความกดอากาศสูงขึ้น (+${trend.toFixed(1)} hPa)`;
                 else if(trend < -0.5) trendMsg = `ความกดอากาศลดลง (${trend.toFixed(1)} hPa)`;
-                else trendMsg = "ความกดอากาศคงที่ (Stable)";
+                else trendMsg = "ความกดอากาศคงที่";
                 document.getElementById('pressure-trend').innerText = trendMsg;
 
                 // 3. อัปเดตกราฟ (เอาแค่ 20 จุดล่าสุดพอ เดี๋ยวรก)

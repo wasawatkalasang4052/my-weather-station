@@ -1,0 +1,17 @@
+body { background-color: #f0f2f5; font-family: 'Sarabun', sans-serif; }
+
+.card-weather {
+    border: none; border-radius: 20px; background: white;
+    padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+    transition: transform 0.3s;
+}
+
+.card-weather:hover { transform: translateY(-5px); }
+
+.value-text { font-size: 2.2rem; font-weight: 800; color: #333; }
+.unit-text { font-size: 0.9rem; color: #888; }
+
+/* Theme สีสำหรับคำแนะนำ AI */
+.bg-gradient-advice { background: linear-gradient(135deg, #FF9966 0%, #FF5E62 100%); color: white; }
+.bg-gradient-safe { background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%); color: white; }
+.bg-gradient-rain { background: linear-gradient(135deg, #4b6cb7 0%, #182848 100%); color: white; }

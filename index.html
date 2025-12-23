@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ITHALA20 Weather Station</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body { background-color: #f4f7f6; font-family: 'Sarabun', sans-serif; }
+        .card-weather {
+            border: none; border-radius: 15px; background: white;
+            padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            transition: transform 0.3s;
+        }
+        .card-weather:hover { transform: translateY(-5px); }
+        .icon-box { font-size: 2.5rem; margin-bottom: 10px; }
+        .value-text { font-size: 2.5rem; font-weight: bold; color: #333; }
+        .unit-text { font-size: 1rem; color: #777; }
+        .update-badge { font-size: 0.8rem; background: #e9ecef; color: #555; padding: 5px 10px; border-radius: 20px; }
+    </style>
+</head>
+<body>
+
+    <div class="container py-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="mb-0 fw-bold"><i class="fa-solid fa-tower-broadcast text-primary"></i> ITHALA20 Station</h2>
+                <small class="text-muted">Real-time Environmental Monitoring</small>
+            </div>
+            <span id="last-update" class="update-badge"><i class="fa-regular fa-clock"></i> Waiting...</span>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-4">
+                <div class="card-weather text-center border-bottom border-4 border-danger">
+                    <div class="icon-box text-danger"><i class="fa-solid fa-temperature-three-quarters"></i></div>
+                    <div class="text-muted">Temperature</div>
+                    <div><span id="temp" class="value-text">--</span> <span class="unit-text">°C</span></div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4">
+                <div class="card-weather text-center border-bottom border-4 border-info">
+                    <div class="icon-box text-info"><i class="fa-solid fa-droplet"></i></div>
+                    <div class="text-muted">Humidity</div>
+                    <div><span id="hum" class="value-text">--</span> <span class="unit-text">%</span></div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4">
+                <div class="card-weather text-center border-bottom border-4 border-warning">
+                    <div class="icon-box text-warning"><i class="fa-solid fa-wind"></i></div>
+                    <div class="text-muted">Wind Speed</div>
+                    <div><span id="wind" class="value-text">--</span> <span class="unit-text">m/s</span></div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4">
+                <div class="card-weather text-center border-bottom border-4 border-primary">
+                    <div class="icon-box text-primary"><i class="fa-solid fa-cloud-rain"></i></div>
+                    <div class="text-muted">Rain</div>
+                    <div><span id="rain" class="value-text">--</span> <span class="unit-text">mm</span></div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4">
+                <div class="card-weather text-center border-bottom border-4" style="border-color: purple !important;">
+                    <div class="icon-box" style="color: purple;"><i class="fa-solid fa-sun"></i></div>
+                    <div class="text-muted">UV Index</div>
+                    <div><span id="uv" class="value-text">--</span> <span class="unit-text">idx</span></div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4">
+                <div class="card-weather text-center border-bottom border-4 border-secondary">
+                    <div class="icon-box text-secondary"><i class="fa-solid fa-gauge-high"></i></div>
+                    <div class="text-muted">Pressure</div>
+                    <div><span id="pres" class="value-text" style="font-size: 1.8rem;">--</span> <span class="unit-text">hPa</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-weather p-3">
+            <h5 class="mb-3"><i class="fa-solid fa-chart-line"></i> กราฟย้อนหลัง (Temperature & Wind)</h5>
+            <canvas id="myChart" style="max-height: 350px;"></canvas>
+        </div>
+    </div>
+
+    <script>
+        // =========================================================
+        // 🔗 เชื่อมต่อ SUPABASE (ใส่ให้แล้ว)
+        // =========================================================
+        const supabaseUrl = 'https://meyqbmfbmgzumsactbdw.supabase.co'
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1leXFibWZibWd6dW1zYWN0YmR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY0ODQ5MDUsImV4cCI6MjA4MjA2MDkwNX0.QbP3qTonv6wo32x1mcRKulJcNQ7H4KP_2W2ScsEKtFU'
+        const _supabase = supabase.createClient(supabaseUrl, supabaseKey)
+
+        // สร้างกราฟเปล่าๆ รอไว้
+        const ctx = document.getElementById('myChart').getContext('2d');
+        const weatherChart = new Chart(ctx, {
+            type: 'line',
+            data: { labels: [], datasets: [
+                { label: 'Temp (°C)', data: [], borderColor: '#dc3545', tension: 0.4, yAxisID: 'y' },
+                { label: 'Wind (m/s)', data: [], borderColor: '#ffc107', tension: 0.4, yAxisID: 'y1' }
+            ]},
+            options: {
+                responsive: true,
+                interaction: { mode: 'index', intersect: false },
+                scales: {
+                    y: { type: 'linear', display: true, position: 'left', title: {display:true, text:'Temperature'} },
+                    y1: { type: 'linear', display: true, position: 'right', grid: {drawOnChartArea: false}, title: {display:true, text:'Wind Speed'} }
+                }
+            }
+        });
+
+        // ฟังก์ชันดึงข้อมูล
+        async function fetchData() {
+            // ดึง 20 รายการล่าสุด
+            const { data, error } = await _supabase
+                .from('weather_logs')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(20)
+
+            if (data && data.length > 0) {
+                // 1. อัปเดตการ์ดตัวเลข (เอาตัวล่าสุด data[0])
+                const latest = data[0];
+                document.getElementById('temp').innerText = latest.temperature.toFixed(1);
+                document.getElementById('hum').innerText = latest.humidity.toFixed(0);
+                document.getElementById('wind').innerText = latest.wind_speed.toFixed(1);
+                document.getElementById('rain').innerText = latest.rain.toFixed(1);
+                document.getElementById('uv').innerText = latest.uv.toFixed(1);
+                document.getElementById('pres').innerText = latest.pressure.toFixed(0);
+                
+                const date = new Date(latest.created_at);
+                document.getElementById('last-update').innerText = "Update: " + date.toLocaleTimeString('th-TH');
+
+                // 2. อัปเดตกราฟ (ต้องกลับด้านข้อมูล เพราะเราดึงจาก ล่าสุด->อดีต แต่กราฟต้องวาด อดีต->ล่าสุด)
+                const reversedData = data.slice().reverse();
+                
+                weatherChart.data.labels = reversedData.map(d => new Date(d.created_at).toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'}));
+                weatherChart.data.datasets[0].data = reversedData.map(d => d.temperature);
+                weatherChart.data.datasets[1].data = reversedData.map(d => d.wind_speed);
+                weatherChart.update();
+            }
+        }
+
+        // รันทันทีและวนทุก 10 วินาที
+        fetchData();
+        setInterval(fetchData, 10000);
+    </script>
+</body>
+</html>

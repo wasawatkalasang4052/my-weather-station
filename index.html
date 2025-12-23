@@ -21,6 +21,12 @@
         .value-text { font-size: 2.5rem; font-weight: bold; color: #333; }
         .unit-text { font-size: 1rem; color: #777; }
         .update-badge { font-size: 0.8rem; background: #e9ecef; color: #555; padding: 5px 10px; border-radius: 20px; }
+        
+        /* ตกแต่งการ์ดพยากรณ์พิเศษ */
+        .forecast-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -35,6 +41,18 @@
         </div>
 
         <div class="row g-3 mb-4">
+            
+            <div class="col-12">
+                <div class="card-weather forecast-card text-center">
+                    <h3 class="fw-bold mb-3"><i class="fa-solid fa-crystal-ball"></i> Weather Forecast</h3>
+                    <div id="forecast-text" style="font-size: 2.5rem; font-weight: bold; text-shadow: 1px 1px 2px rgba(0,0,0,0.2);">
+                        กำลังประมวลผล...
+                    </div>
+                    <div id="pressure-trend" class="mt-2" style="font-size: 1.1rem; opacity: 0.9;">
+                        --
+                    </div>
+                </div>
+            </div>
             <div class="col-6 col-md-4">
                 <div class="card-weather text-center border-bottom border-4 border-danger">
                     <div class="icon-box text-danger"><i class="fa-solid fa-temperature-three-quarters"></i></div>
@@ -87,7 +105,7 @@
 
     <script>
         // =========================================================
-        // 🔗 เชื่อมต่อ SUPABASE (ใส่ให้แล้ว)
+        // 🔗 เชื่อมต่อ SUPABASE (ใส่ค่าของคุณให้แล้ว)
         // =========================================================
         const supabaseUrl = 'https://meyqbmfbmgzumsactbdw.supabase.co'
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1leXFibWZibWd6dW1zYWN0YmR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY0ODQ5MDUsImV4cCI6MjA4MjA2MDkwNX0.QbP3qTonv6wo32x1mcRKulJcNQ7H4KP_2W2ScsEKtFU'
@@ -111,18 +129,37 @@
             }
         });
 
-        // ฟังก์ชันดึงข้อมูล
+        // --- 🧠 ฟังก์ชันสมองกล: ทำนายอากาศ ---
+        function predictWeather(currentP, trendP) {
+            let forecast = "";
+            let icon = "";
+
+            // 1. ดูค่าปัจจุบัน
+            if (currentP > 1020) { forecast = "ฟ้าโปร่ง/แดดจัด"; icon = "☀️"; }
+            else if (currentP > 1009) { forecast = "เมฆมาก/ปกติ"; icon = "⛅"; }
+            else { forecast = "ฝนตก/พายุเข้า"; icon = "🌧️"; }
+
+            // 2. ดูแนวโน้ม (Trend) สำคัญกว่าค่าปัจจุบัน
+            if (trendP < -1.5) { return "⚠️ ระวังพายุ! (Storm Warning)"; }
+            else if (trendP > 1.5) { return "🌤️ ฟ้ากำลังเปิด (Clearing)"; }
+            
+            return icon + " " + forecast;
+        }
+
+        // ฟังก์ชันดึงข้อมูลหลัก
         async function fetchData() {
-            // ดึง 20 รายการล่าสุด
+            // ดึงข้อมูล 60 แถวล่าสุด (ประมาณ 1 ชั่วโมง) เพื่อดูแนวโน้ม
             const { data, error } = await _supabase
                 .from('weather_logs')
                 .select('*')
                 .order('created_at', { ascending: false })
-                .limit(20)
+                .limit(60)
 
             if (data && data.length > 0) {
-                // 1. อัปเดตการ์ดตัวเลข (เอาตัวล่าสุด data[0])
-                const latest = data[0];
+                const latest = data[0]; // ล่าสุด (Now)
+                const oldest = data[data.length - 1]; // เก่าสุดในลิสต์ (1 ชม. ก่อน)
+
+                // 1. อัปเดตตัวเลขใน Dashboard
                 document.getElementById('temp').innerText = latest.temperature.toFixed(1);
                 document.getElementById('hum').innerText = latest.humidity.toFixed(0);
                 document.getElementById('wind').innerText = latest.wind_speed.toFixed(1);
@@ -133,17 +170,30 @@
                 const date = new Date(latest.created_at);
                 document.getElementById('last-update').innerText = "Update: " + date.toLocaleTimeString('th-TH');
 
-                // 2. อัปเดตกราฟ (ต้องกลับด้านข้อมูล เพราะเราดึงจาก ล่าสุด->อดีต แต่กราฟต้องวาด อดีต->ล่าสุด)
-                const reversedData = data.slice().reverse();
+                // 2. คำนวณพยากรณ์อากาศ 🔮
+                const trend = latest.pressure - oldest.pressure; // ผลต่างความกดอากาศ
+                const prediction = predictWeather(latest.pressure, trend);
                 
-                weatherChart.data.labels = reversedData.map(d => new Date(d.created_at).toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'}));
-                weatherChart.data.datasets[0].data = reversedData.map(d => d.temperature);
-                weatherChart.data.datasets[1].data = reversedData.map(d => d.wind_speed);
+                document.getElementById('forecast-text').innerText = prediction;
+                
+                // แสดงสถานะแนวโน้ม
+                let trendMsg = "";
+                if(trend > 0.5) trendMsg = `ความกดอากาศสูงขึ้น (+${trend.toFixed(1)} hPa)`;
+                else if(trend < -0.5) trendMsg = `ความกดอากาศลดลง (${trend.toFixed(1)} hPa)`;
+                else trendMsg = "ความกดอากาศคงที่ (Stable)";
+                document.getElementById('pressure-trend').innerText = trendMsg;
+
+                // 3. อัปเดตกราฟ (เอาแค่ 20 จุดล่าสุดพอ เดี๋ยวรก)
+                const chartData = data.slice(0, 20).reverse();
+                
+                weatherChart.data.labels = chartData.map(d => new Date(d.created_at).toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'}));
+                weatherChart.data.datasets[0].data = chartData.map(d => d.temperature);
+                weatherChart.data.datasets[1].data = chartData.map(d => d.wind_speed);
                 weatherChart.update();
             }
         }
 
-        // รันทันทีและวนทุก 10 วินาที
+        // เริ่มทำงานทันที และวนทุก 10 วินาที
         fetchData();
         setInterval(fetchData, 10000);
     </script>

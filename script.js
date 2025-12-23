@@ -9,24 +9,26 @@ const datePicker = document.getElementById('datePicker');
 datePicker.valueAsDate = new Date();
 datePicker.addEventListener('change', fetchData);
 
-// --- 📊 สร้างกราฟ (รวมทุกค่าตามที่ขอ) ---
+// --- 📊 สร้างกราฟ (7 เส้น รวม Light) ---
 const ctx = document.getElementById('myChart').getContext('2d');
 const weatherChart = new Chart(ctx, {
     type: 'line',
     data: { 
         labels: [], 
         datasets: [
-            // 1. Temp (แดง)
+            // 1. Temp
             { label: 'Temp (°C)', data: [], borderColor: '#dc3545', backgroundColor: 'rgba(220, 53, 69, 0.1)', yAxisID: 'y', tension: 0.4 },
-            // 2. Humidity (ฟ้า - แกนขวา)
+            // 2. Humidity (แกนขวา)
             { label: 'Humidity (%)', data: [], borderColor: '#0dcaf0', yAxisID: 'y1', borderDash: [5, 5], tension: 0.4 },
-            // 3. Wind (เหลือง)
+            // 3. Wind
             { label: 'Wind (m/s)', data: [], borderColor: '#ffc107', yAxisID: 'y', tension: 0.4 },
-            // 4. Rain (น้ำเงินเข้ม)
+            // 4. Rain
             { label: 'Rain (mm)', data: [], borderColor: '#0d6efd', backgroundColor: 'rgba(13, 110, 253, 0.2)', fill: true, yAxisID: 'y', tension: 0.1 },
-            // 5. UV (ม่วง)
+            // 5. UV
             { label: 'UV Index', data: [], borderColor: '#6f42c1', yAxisID: 'y', tension: 0.4 },
-            // 6. Pressure (เทา - ซ่อนไว้ก่อนเพราะค่าสูง)
+            // 6. Light (เหลืองสว่าง - ซ่อนไว้ก่อน เพราะค่า Lux สูงมาก)
+            { label: 'Light (Lux)', data: [], borderColor: '#fd7e14', yAxisID: 'y_lux', hidden: true, tension: 0.4 },
+            // 7. Pressure (เทา - ซ่อนไว้ก่อน)
             { label: 'Pressure (hPa)', data: [], borderColor: '#6c757d', yAxisID: 'y_pres', hidden: true, tension: 0.4 }
         ]
     },
@@ -34,9 +36,10 @@ const weatherChart = new Chart(ctx, {
         responsive: true, 
         interaction: { mode: 'index', intersect: false },
         scales: {
-            y: { type: 'linear', display: true, position: 'left', title: {display:true, text:'Value'} },
+            y: { type: 'linear', display: true, position: 'left', title: {display:true, text:'General'} },
             y1: { type: 'linear', display: true, position: 'right', grid: {drawOnChartArea: false}, title: {display:true, text:'%'} },
-            y_pres: { type: 'linear', display: false } // ซ่อนสเกล Pressure ไม่ให้รก
+            y_lux: { type: 'linear', display: false }, // ซ่อนแกนเลข Lux
+            y_pres: { type: 'linear', display: false } // ซ่อนแกนเลข Pressure
         }
     }
 });
@@ -58,7 +61,7 @@ function analyzeWeather(latest, trendPressure) {
         action = "ควรพกร่มก่อนออกจากบ้าน | อย่าเพิ่งล้างรถ";
         themeClass = "bg-secondary";
         icon = "🌂";
-    } else if (latest.uv > 6) {
+    } else if (latest.uv > 6 || latest.light > 50000) {
         forecast = "แดดแรงมาก! ฟ้าโปร่ง ☀️";
         action = "ทาครีมกันแดด | ใส่แว่นกันแดด | เลี่ยงที่แจ้ง";
         themeClass = "bg-gradient-advice";
@@ -88,11 +91,11 @@ function exportCSV() {
     if (globalData.length === 0) { alert("ไม่มีข้อมูลให้ Export"); return; }
     
     let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "Date,Time,Temperature,Humidity,Pressure,Rain,Wind,UV\n"; 
+    csvContent += "Date,Time,Temperature,Humidity,Pressure,Light,Rain,Wind,UV\n"; // เพิ่ม Light
 
     globalData.forEach(row => {
         const dateObj = new Date(row.created_at);
-        csvContent += `${dateObj.toLocaleDateString('th-TH')},${dateObj.toLocaleTimeString('th-TH')},${row.temperature},${row.humidity},${row.pressure},${row.rain},${row.wind_speed},${row.uv}\n`;
+        csvContent += `${dateObj.toLocaleDateString('th-TH')},${dateObj.toLocaleTimeString('th-TH')},${row.temperature},${row.humidity},${row.pressure},${row.light},${row.rain},${row.wind_speed},${row.uv}\n`;
     });
 
     const encodedUri = encodeURI(csvContent);
@@ -125,24 +128,27 @@ async function fetchData() {
         const oneHourAgoIndex = Math.max(0, data.length - 60);
         const trendP = latest.pressure - data[oneHourAgoIndex].pressure;
 
+        // อัปเดตตัวเลขการ์ด
         document.getElementById('temp').innerText = latest.temperature.toFixed(1);
         document.getElementById('hum').innerText = latest.humidity.toFixed(0);
         document.getElementById('wind').innerText = latest.wind_speed.toFixed(1);
         document.getElementById('rain').innerText = latest.rain.toFixed(1);
         document.getElementById('uv').innerText = latest.uv.toFixed(1);
+        document.getElementById('light').innerText = latest.light.toFixed(0); // ✅ เพิ่ม Light
         document.getElementById('pres').innerText = latest.pressure.toFixed(0);
         document.getElementById('last-update').innerText = "ข้อมูลล่าสุด: " + new Date(latest.created_at).toLocaleTimeString('th-TH');
 
         analyzeWeather(latest, trendP);
 
-        // Update Charts
+        // อัปเดตกราฟ
         weatherChart.data.labels = data.map(d => new Date(d.created_at).toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'}));
         weatherChart.data.datasets[0].data = data.map(d => d.temperature);
         weatherChart.data.datasets[1].data = data.map(d => d.humidity);
         weatherChart.data.datasets[2].data = data.map(d => d.wind_speed);
         weatherChart.data.datasets[3].data = data.map(d => d.rain);
         weatherChart.data.datasets[4].data = data.map(d => d.uv);
-        weatherChart.data.datasets[5].data = data.map(d => d.pressure);
+        weatherChart.data.datasets[5].data = data.map(d => d.light);    // ✅ เพิ่ม Light
+        weatherChart.data.datasets[6].data = data.map(d => d.pressure);
         weatherChart.update();
     } else {
         document.getElementById('temp').innerText = "--";

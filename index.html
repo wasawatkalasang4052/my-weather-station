@@ -7,13 +7,15 @@
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css"> </head>
+    <link rel="stylesheet" href="style.css">
+</head>
 <body>
 
     <div class="container py-4">
         <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
             <div>
                 <h2 class="fw-bold mb-0"><i class="fa-solid fa-satellite-dish text-primary"></i> ITHALA20 Station</h2>
+                <small class="text-muted">ระบบพยากรณ์และเตือนภัยอัจฉริยะ</small>
             </div>
             <div class="d-flex gap-2">
                 <input type="date" id="datePicker" class="form-control">
@@ -39,35 +41,41 @@
         </div>
 
         <div class="row g-3 mb-4">
-            <div class="col-6 col-md-4"><div class="card-weather text-center border-bottom border-4 border-danger">
-                <i class="fa-solid fa-temperature-three-quarters text-danger fs-3 mb-2"></i>
-                <div class="text-muted">อุณหภูมิ</div>
-                <div><span id="temp" class="value-text">--</span> <span class="unit-text">°C</span></div>
+            <div class="col-6 col-md-3"><div class="card-weather text-center border-bottom border-4 border-danger">
+                <i class="fa-solid fa-temperature-three-quarters text-danger fs-4 mb-2"></i>
+                <div class="text-muted small">อุณหภูมิ</div>
+                <div><span id="temp" class="fw-bold fs-2">--</span> <span class="unit-text">°C</span></div>
+            </div></div>
+            <div class="col-6 col-md-3"><div class="card-weather text-center border-bottom border-4 border-info">
+                <i class="fa-solid fa-droplet text-info fs-4 mb-2"></i>
+                <div class="text-muted small">ความชื้น</div>
+                <div><span id="hum" class="fw-bold fs-2">--</span> <span class="unit-text">%</span></div>
+            </div></div>
+            <div class="col-6 col-md-3"><div class="card-weather text-center border-bottom border-4 border-warning">
+                <i class="fa-solid fa-wind text-warning fs-4 mb-2"></i>
+                <div class="text-muted small">ความเร็วลม</div>
+                <div><span id="wind" class="fw-bold fs-2">--</span> <span class="unit-text">m/s</span></div>
+            </div></div>
+            <div class="col-6 col-md-3"><div class="card-weather text-center border-bottom border-4 border-primary">
+                <i class="fa-solid fa-cloud-rain text-primary fs-4 mb-2"></i>
+                <div class="text-muted small">ปริมาณฝน</div>
+                <div><span id="rain" class="fw-bold fs-2">--</span> <span class="unit-text">mm</span></div>
+            </div></div>
+            
+            <div class="col-6 col-md-4"><div class="card-weather text-center border-bottom border-4" style="border-color: purple !important;">
+                <i class="fa-solid fa-sun fs-4 mb-2" style="color: purple;"></i>
+                <div class="text-muted small">UV Index</div>
+                <div><span id="uv" class="fw-bold fs-2">--</span> <span class="unit-text">idx</span></div>
             </div></div>
             <div class="col-6 col-md-4"><div class="card-weather text-center border-bottom border-4 border-warning">
-                <i class="fa-solid fa-wind text-warning fs-3 mb-2"></i>
-                <div class="text-muted">ความเร็วลม</div>
-                <div><span id="wind" class="value-text">--</span> <span class="unit-text">m/s</span></div>
+                <i class="fa-regular fa-lightbulb text-warning fs-4 mb-2"></i>
+                <div class="text-muted small">แสงสว่าง</div>
+                <div><span id="light" class="fw-bold fs-2">--</span> <span class="unit-text">Lux</span></div>
             </div></div>
-            <div class="col-6 col-md-4"><div class="card-weather text-center border-bottom border-4 border-primary">
-                <i class="fa-solid fa-cloud-rain text-primary fs-3 mb-2"></i>
-                <div class="text-muted">ปริมาณฝน</div>
-                <div><span id="rain" class="value-text">--</span> <span class="unit-text">mm</span></div>
-            </div></div>
-            <div class="col-6 col-md-4"><div class="card-weather text-center border-bottom border-4" style="border-color: purple !important;">
-                <i class="fa-solid fa-sun fs-3 mb-2" style="color: purple;"></i>
-                <div class="text-muted">UV Index</div>
-                <div><span id="uv" class="value-text">--</span> <span class="unit-text">idx</span></div>
-            </div></div>
-            <div class="col-6 col-md-4"><div class="card-weather text-center border-bottom border-4 border-info">
-                <i class="fa-solid fa-droplet text-info fs-3 mb-2"></i>
-                <div class="text-muted">ความชื้น</div>
-                <div><span id="hum" class="value-text">--</span> <span class="unit-text">%</span></div>
-            </div></div>
-            <div class="col-6 col-md-4"><div class="card-weather text-center border-bottom border-4 border-secondary">
-                <i class="fa-solid fa-gauge-high text-secondary fs-3 mb-2"></i>
-                <div class="text-muted">ความกดอากาศ</div>
-                <div><span id="pres" class="value-text fs-3">--</span> <span class="unit-text">hPa</span></div>
+            <div class="col-12 col-md-4"><div class="card-weather text-center border-bottom border-4 border-secondary">
+                <i class="fa-solid fa-gauge-high text-secondary fs-4 mb-2"></i>
+                <div class="text-muted small">ความกดอากาศ</div>
+                <div><span id="pres" class="fw-bold fs-2">--</span> <span class="unit-text">hPa</span></div>
             </div></div>
         </div>
 
@@ -82,5 +90,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="script.js"></script> </body>
+    <script src="script.js"></script>
+</body>
 </html>
